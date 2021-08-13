@@ -1,6 +1,37 @@
 # Основные определения
 ## DID
-https://www.w3.org/TR/did-core/
+В основе технологии SSI лежит понятие децентрализованного идентификатора ([DID](https://www.w3.org/TR/did-core/)).
+
+```
+did:sov:BzCbsNYhMrjHiqZDTUASHg
+```
+
+С каждым DID связан т.н. DID Document
+
+```xml
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/suites/ed25519-2020/v1"
+  ]
+  "id": "did:example:123456789abcdefghi",
+  "authentication": [{
+    
+    "id": "did:example:123456789abcdefghi#keys-1",
+    "type": "Ed25519VerificationKey2020",
+    "controller": "did:example:123456789abcdefghi",
+    "publicKeyMultibase": "zH3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV"
+  }]
+}
+```
+
+Порядок получения DIDDoc по DID определяется методом DID. Владелец DID может вносить изменения в DIDDoc для ротации ключей,
+изменения точки подключения и т.д.
+
+Каждый SSI субъект может создавать неограниченное число своих собственных DID.
+
+Более подробное описание технологии DID можно найти в книге [Self-Sovereign Identity](https://www.manning.com/books/self-sovereign-identity)
+или соответствующем стандарте [W3C](https://www.w3.org/TR/did-core/).
 ### Приватный  DID
 ### Публичный DID
 ### Инфраструктура публичных ключей
