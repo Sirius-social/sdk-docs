@@ -12,10 +12,13 @@ https://www.w3.org/TR/did-core/
 установке соединения, обмену данными в соответствии с протоколами, непосредственно взаимодействуют с SSI кошельком.
 Взаимодействие с другими агентами происходит путем обмена сообщений.
 
+Концепция SSI агентов преложена в [Aries RFC 0004](https://github.com/hyperledger/aries-rfcs/tree/main/concepts/0004-agents).
+
 ### Облачный агент
 Подходит для случая, когда SSI субъектом является юридическое лицо. Облачный агент управляется из корпоративного
 приложения при помощи IndiLynx-SDK.
 
+Для подключения и управления облачным агентом в IndiLynx SDK достаточно вызвать следующую команду
 ```python
 sirius_sdk.init(
    server_uri="<Sirius Hub URL>",
@@ -73,6 +76,60 @@ ok, cred_def_ = await dkms.register_cred_def(
 ```
 
 # Установка доверенного соединения между агентами
+IndiLynx SDK позволяет устанавливать защищенное соединение между двумя агентами в соответствии с протоколом 
+[0160-connection-protocol](https://github.com/hyperledger/aries-rfcs/tree/main/features/0160-connection-protocol).
+
+В процессе установки защищенного соединения участвуют две стороны: Inviter и Invitee. Inviter инициирует процесс установки
+соединения путем выпуска приглашения (Invitation). Приглашение может быть публичным для неопределенного круга лиц или 
+приватным и выпускаться для конкретного пользователя.
+
+```python
+# Работаем от лица агента Inviter-а
+async with sirius_sdk.context(**INVITER):
+    connection_key = await sirius_sdk.Crypto.create_key() # уникальный ключ соединения
+    invitation = Invitation(
+        label='Inviter',
+        endpoint=inviter_endpoint.address(), # URL адрес Inviter
+        recipient_keys=[connection_key]
+    )
+```
+Invitee получает от Invter-а приглашение по независимому каналу связи (например через qr-код)
+```python
+# Работаем от лица агента Invitee
+async with sirius_sdk.context(**INVITEE):
+    # Создадим новый DID для соединения с Inviter-ом
+    my_did, my_verkey = await sirius_sdk.DID.create_and_store_my_did()
+    me = sirius_sdk.Pairwise.Me(did=my_did, verkey=my_verkey)
+    # Создадим экземпляр автомата для установки соединения на стороне Invitee
+    invitee_machine = sirius_sdk.aries_rfc.Invitee(me, invitee_endpoint)
+    ok, pairwise = await invitee_machine.create_connection(invitation=invitation, my_label='Invitee')
+```
+
+IndiLynx SDK инкапсулирует всю внутреннюю логику протокола
+[0160-connection-protocol](https://github.com/hyperledger/aries-rfcs/tree/main/features/0160-connection-protocol) в двух
+машинах состояний: sirius_sdk.aries_rfc.Inviter и sirius_sdk.aries_rfc.Invitee.
+
+```python
+# Работаем от лица агента Inviter-а
+async with sirius_sdk.context(**INVITER):
+    # Создадим новый DID для соединений в рамках ранее созданного invitation
+    my_did, my_verkey = await sirius_sdk.DID.create_and_store_my_did()
+    me = sirius_sdk.Pairwise.Me(did=my_did, verkey=my_verkey)
+    # Создадим экземпляр автомата для установки соединения на стотоне Inviter-а
+    inviter_machine = Inviter(me, connection_key, inviter_endpoint)
+    listener = await sirius_sdk.subscribe()
+    async for event in listener:
+        request = event['message']
+        # Inviter получает ConnRequest от Invitee и проверяет, что он относится к ранее созданному приглашению
+        if isinstance(request, ConnRequest) and event['recipient_verkey'] == connection_key:
+            # запускаем процесс установки соединения
+            ok, pairwise = await inviter_machine.create_connection(request)
+```
+
+Результатом установки соединения у обоих сторон является объект Pairwise. Следует отметить, что установка соединения
+в общем случае производится один раз и не зависит жизненного цикла агентов или внутренних сетевых соединений. Аналогом установки
+соединения между агентами является обмен визитками или номерами телефонов, с той лишь разницей, что в рассматриваемом
+случае уставленное соединение защищено современной криптографией и осоновано на технологии [DID](https://www.w3.org/TR/did-core/).
 
 # Создание и регистрация схем проверяемых учетных данных
 
