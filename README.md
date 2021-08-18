@@ -284,8 +284,6 @@ async for event in listener:
             master_secret_id=PROVER_SECRET_ID
         )
 ```
-# Работаем от лица агента Prover-а
-async with sirius_sdk.context(**VERIFIER):
 
 
 # Установка доверенной среды между агентами
