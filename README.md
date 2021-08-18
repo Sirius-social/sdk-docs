@@ -41,7 +41,7 @@ did:sov:BzCbsNYhMrjHiqZDTUASHg
 ## Агент
 Субъекты в экосистеме SSI взаимодействуют друг с другом при помощи своих агентов. Агенты выполняют техническую работу по
 установке соединения, обмену данными в соответствии с протоколами, непосредственно взаимодействуют с SSI кошельком.
-Взаимодействие с другими агентами происходит путем обмена сообщений.
+Агенты взаимодействуют друг с другом путем обмена сообщений ([DIDComm](https://identity.foundation/didcomm-messaging/spec/)).
 
 Концепция SSI агентов преложена в [Aries RFC 0004](https://github.com/hyperledger/aries-rfcs/tree/main/concepts/0004-agents).
 
@@ -51,14 +51,23 @@ did:sov:BzCbsNYhMrjHiqZDTUASHg
 
 Для подключения и управления облачным агентом в IndiLynx SDK достаточно вызвать следующую команду
 ```python
-sirius_sdk.init(
-   server_uri="<Sirius Hub URL>",
-   credentials="<Hub account credentials>",
-   p2p=sirius_sdk.P2PConnection(
+# служебная информация, необходимая для соединения с облачным агентом или инициализации мобильного агента
+AGENT = {
+    server_uri = "<Sirius Hub URL>",
+    credentials = "<Hub account credentials>",
+   p2p = sirius_sdk.P2PConnection(
      my_keys=("<sdk-public-key>", "<sdk-secret-key>"),
      their_verkey="<agent-side-public-key>"
    )
+}
+sirius_sdk.init(
+   **AGENT
 )
+```
+либо
+```python
+async with sirius_sdk.context(**AGENT):
+    #...
 ```
 
 ### Мобильный агент
@@ -84,7 +93,7 @@ sirius_sdk.init(
 
 ```python
 schema_id, anon_schema = await sirius_sdk.AnonCreds.issuer_create_schema(
-            GOV_DID, 'demo_passport', '1.0', ['first_name', 'last_name', 'age']
+            GOV_DID, 'demo_passport', '1.0', ['first_name', 'last_name', 'birthday']
         )
 ```
 Экосистема Indy требует обязательной записи схемы в реестр
@@ -138,7 +147,7 @@ async with sirius_sdk.context(**INVITEE):
 
 IndiLynx SDK инкапсулирует всю внутреннюю логику протокола
 [0160-connection-protocol](https://github.com/hyperledger/aries-rfcs/tree/main/features/0160-connection-protocol) в двух
-машинах состояний: sirius_sdk.aries_rfc.Inviter и sirius_sdk.aries_rfc.Invitee.
+конечных автоматах: sirius_sdk.aries_rfc.Inviter и sirius_sdk.aries_rfc.Invitee.
 
 ```python
 # Работаем от лица агента Inviter-а
@@ -157,15 +166,126 @@ async with sirius_sdk.context(**INVITER):
             ok, pairwise = await inviter_machine.create_connection(request)
 ```
 
-Результатом установки соединения у обоих сторон является объект Pairwise. Следует отметить, что установка соединения
+Результатом установки соединения у обеих сторон является объект Pairwise. Следует отметить, что установка соединения
 в общем случае производится один раз и не зависит жизненного цикла агентов или внутренних сетевых соединений. Аналогом установки
 соединения между агентами является обмен визитками или номерами телефонов, с той лишь разницей, что в рассматриваемом
-случае уставленное соединение защищено современной криптографией и осоновано на технологии [DID](https://www.w3.org/TR/did-core/).
+случае уставленное соединение защищено современной криптографией и основано на технологии [DID](https://www.w3.org/TR/did-core/).
 
 # Создание и регистрация схем проверяемых учетных данных
 
 # Выдача и получение проверяемых учетных данных
+IndiLynx SDK позволяет выдавать и получать проверяемые учетные данные в соответствии с протоколом
+[0036-issue-credential](https://github.com/hyperledger/aries-rfcs/tree/main/features/0036-issue-credential).
+
+В процессе выдачи проверяемых учетных данных участвуют две стороны: Issuer и Holder. Issuer выдает VC, выпущенный
+в соответствии с ранее созданной схемой и Credential Definition и подписанный его цифровой подписью. Holder сохраняет
+данный VC в своем защищенном кошельке.
+
+IndiLynx SDK инкапсулирует всю внутреннюю логику протокола [0036-issue-credential](https://github.com/hyperledger/aries-rfcs/tree/main/features/0036-issue-credential)
+в двух конечных автоматах: Issuer и Holder.
+
+Предполагается, что между Issuer и Holder установлено доверенное соединение.
+
+```python
+# Работаем от лица агента Issuer-а
+async with sirius_sdk.context(**ISSUER):
+    # Создаем конечный автомат для выдачи VC
+    issuer_machine = sirius_sdk.aries_rfc.Issuer(holder=holder_pairwise)
+    
+    values = {
+        'first_name': 'Mike',
+        'last_name': 'L.', 
+        'birthday': '17.03.1993'
+    }
+
+    ok = await issuer_machine.issue(
+        values=values,
+        schema=schema,
+        cred_def=cred_def,
+        comment="Here is your document",
+        locale="en"
+    )
+```
+
+```python
+# Работаем от лица агента Holder-а
+async with sirius_sdk.context(**HOLDER):
+    holder_machine = sirius_sdk.aries_rfc.Holder(pairwise)
+    listener = await sirius_sdk.subscribe()
+    async for event in listener:
+        # Holder получает предложение получения VC (OfferCredentialMessage) от Issuer-а
+        if isinstance(event['message'], OfferCredentialMessage):
+            offer: OfferCredentialMessage = event.message
+            # Holder запускает процесс получения VC. Результат записывается в его кошелек
+            success, cred_id = await holder_machine.accept(offer=offer, master_secret_id=PROVER_SECRET_ID)
+```
 
 # Запрос и предоставление проверяемых учетных данных
+IndiLynx SDK позволяет запрашивать сведения и формировать криптографические доказательства о проверяемых учетных данных
+владельца в соответствии с протоколом
+[0037-present-proof](https://github.com/hyperledger/aries-rfcs/tree/main/features/0037-present-proof).
+
+В процессе выдачи проверяемых учетных данных участвуют две стороны: Verifier и Prover.
+
+IndiLynx SDK инкапсулирует всю внутреннюю логику протокола [0037-present-proof](https://github.com/hyperledger/aries-rfcs/tree/main/features/0037-present-proof)
+в двух конечных автоматах: Verifier и Prover.
+
+Предполагается, что между Verifier и Prover установлено доверенное соединение.
+
+```python
+# Работаем от лица агента Verifier-а
+async with sirius_sdk.context(**VERIFIER):
+    proof_request = {
+        "name": "Demo Proof Request",
+        "version": "0.1",
+        "requested_attributes": {
+            'attr1_referent': {
+                "name": "first_name",
+                "restrictions": {
+                    "issuer_did": ISSUER_DID
+                }
+            },
+            'attr2_referent': {
+                "name": "last_name",
+                "restrictions": {
+                    "issuer_did": ISSUER_DID
+                }
+            },
+            'attr3_referent': {
+                "name": "birthday",
+                "restrictions": {
+                    "issuer_did": ISSUER_DID
+                }
+            }
+        },
+        "nonce": await sirius_sdk.AnonCreds.generate_nonce()
+    }
+    dkms = await sirius_sdk.ledger(network_name)
+        verifier_machine = sirius_sdk.aries_rfc.Verifier(
+            prover=prover,
+            ledger=dkms
+        )
+    success = await feature_0037.verify(proof_request)
+```
+
+```python
+# Работаем от лица агента Prover-а
+async with sirius_sdk.context(**PROVER):
+listener = await sirius_sdk.subscribe()
+async for event in listener:
+    if isinstance(event.message, RequestPresentationMessage):
+        proof_request: sirius_sdk.aries_rfc.RequestPresentationMessage = event.message
+        holder_machine = sirius_sdk.aries_rfc.Prover(
+            verifier=verifier,
+            ledger=dkms
+        )
+        success = await holder_machine.prove(
+            request=proof_request,
+            master_secret_id=PROVER_SECRET_ID
+        )
+```
+# Работаем от лица агента Prover-а
+async with sirius_sdk.context(**VERIFIER):
+
 
 # Установка доверенной среды между агентами
