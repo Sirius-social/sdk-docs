@@ -8,20 +8,35 @@ did:sov:BzCbsNYhMrjHiqZDTUASHg
 
 С каждым DID связан т.н. DID Document
 
-```xml
+```json
 {
-  "@context": [
-    "https://www.w3.org/ns/did/v1",
-    "https://w3id.org/security/suites/ed25519-2020/v1"
+  '@context': 'https://w3id.org/did/v1',
+  'id': 'UNeAfCugwSoeukbBLXdPcU',
+  'authentication': [
+    {
+      'publicKey': 'UNeAfCugwSoeukbBLXdPcU#1',
+      'type': 'Ed25519SignatureAuthentication2018'
+    }
+  ],
+  'publicKey': [
+    {
+      'id': '1',
+      'type': 'Ed25519VerificationKey2018',
+      'controller': 'UNeAfCugwSoeukbBLXdPcU',
+      'publicKeyBase58': 'FvKTRgSYJkmuaPYdFQNBSJ71c1ajKG3BpQ3sopsTsdug'
+    }
+  ],
+  'service': [
+    {
+      'id': 'did:peer:UNeAfCugwSoeukbBLXdPcU;indy',
+      'type': 'IndyAgent',
+      'priority': 0,
+      'recipientKeys': [
+        'UNeAfCugwSoeukbBLXdPcU#1'
+      ],
+      'serviceEndpoint': 'https://demo.socialsirius.com/endpoint/e0f9bbdfcc82468f8c10e8ac33c0d79c'
+    }
   ]
-  "id": "did:example:123456789abcdefghi",
-  "authentication": [{
-    
-    "id": "did:example:123456789abcdefghi#keys-1",
-    "type": "Ed25519VerificationKey2020",
-    "controller": "did:example:123456789abcdefghi",
-    "publicKeyMultibase": "zH3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV"
-  }]
 }
 ```
 
