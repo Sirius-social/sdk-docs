@@ -53,12 +53,32 @@ did:sov:BzCbsNYhMrjHiqZDTUASHg
 DIDDoc приватного DID доступен только тому, кому он был отправлен лично владельцем соответствующего DID. Приватные DID 
 нигде не регистрируются. Обычно приватные DID используются для установления доверенных соединений между агентами.
 Обычной практикой является создание уникального DID для каждого соединения.
-DID метод, не требующий использования реестра, описан в стандарте [did:key](https://w3c-ccg.github.io/did-method-key/).
+DID методы, не требующие использования реестра, описаны в стандартах [did:key](https://w3c-ccg.github.io/did-method-key/),
+[did:peer](https://identity.foundation/peer-did-method-spec/).
+
+IndiLynx SDK позволяет создавать приватный DID следующим образом
+```python
+async with sirius_sdk.context(**AGENT):
+    # Данный вызов создает новый DID и сохраняет его в Wallet
+    agent_did, agent_verkey = await sirius_sdk.DID.create_and_store_my_did()
+```
 ### Публичный DID
 Публичный DID регистрируется в [публичном реестре](https://www.w3.org/TR/did-spec-registries/). Таким образом, соответствующий
 DIDDoc доступен неограниченному кругу лиц. Размещение DIDDoc в публичном реестре позволяет поддерживать его в актуальном
 состоянии, не изменяя при этом сам DID.
-### Инфраструктура публичных ключей
+
+В рамках экосистемы Indy право на добавление DID в реестр имеют только агенты со специальной 
+[ролью](https://hyperledger-indy.readthedocs.io/projects/node/en/latest/auth_rules.html) - Steward.
+```python
+async with sirius_sdk.context(**STEWARD):
+    dkms = await sirius_sdk.ledger(network_name)
+    dkms = await sirius_sdk.write_nym(
+        submitter_did=steward_did,
+        target_did=agent_did,
+        ver_key=agent_verkey
+    )
+```
+
 ## SSI кошелек
 Кошелек представляет собой хранилище публичных и приватных ключей, проверяемых учетных данных, DID и других приватных
 криптографических данных, принадлежащих субъекту SSI и ни при каких обстоятельствах не передаваемых в открытом виде.
