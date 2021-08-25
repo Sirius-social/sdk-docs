@@ -20,6 +20,10 @@ async def http_get(url: str):
 
 
 async def get_agent_params(agent_name: str):
+    """
+    :param agent_name:
+    :return: Служебная информация, необходимая для подключения к облачному агенту (адрес, ключи и т.д.)
+    """
     ok, meta = await http_get("http://localhost/test_suite")
     agent = meta.get(agent_name, None)
     if not agent:

@@ -143,13 +143,20 @@ async with sirius_sdk.context(**AGENT):
 
 ```python
 schema_id, anon_schema = await sirius_sdk.AnonCreds.issuer_create_schema(
-            GOV_DID, 'demo_passport', '1.0', ['first_name', 'last_name', 'birthday']
-        )
+        issuer_did=gov_did,
+        name='demo_passport',
+        version='1.0',
+        attrs=['first_name', 'last_name', 'birthday']
+    )
 ```
 Экосистема Indy требует обязательной записи схемы в реестр
 ```python
-dkms = await sirius_sdk.ledger(network_name)
-schema_ = await dkms.ensure_schema_exists(anon_schema, ISSUER_DID)
+dkms = await sirius_sdk.ledger('default')
+    # Регистрируем схему в реестре
+    schema = await dkms.ensure_schema_exists(
+        schema=anon_schema,
+        submitter_did=gov_did
+    )
 ```
 ### Credential definition
 Данная структура является специфичной для Indy.
@@ -159,11 +166,12 @@ schema_ = await dkms.ensure_schema_exists(anon_schema, ISSUER_DID)
 соответствущий credential definition
 
 ```python
-ok, cred_def_ = await dkms.register_cred_def(
-                cred_def=sirius_sdk.CredentialDefinition(tag='TAG', schema=schema_),
-                submitter_did=ISSUER_DID
-            )
+ok, cred_def = await dkms.register_cred_def(
+        cred_def=sirius_sdk.CredentialDefinition(tag='TAG', schema=schema),
+        submitter_did=gov_did
+    )
 ```
+Весь пример [доступен здесь](examples/python/create_schema/main.py).
 
 # Создание локальной тестовой среды IndiLynx
 Тестовую среду IndiLynx для запуска представленных в настоящей документации примеров и проведения экспериментов легче всего
