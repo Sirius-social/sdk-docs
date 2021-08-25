@@ -58,10 +58,12 @@ DID методы, не требующие использования реест�
 
 IndiLynx SDK позволяет создавать приватный DID следующим образом
 ```python
-async with sirius_sdk.context(**AGENT):
+# Работаем от имени клиента
+async with sirius_sdk.context(**client_agent_params):
     # Данный вызов создает новый DID и сохраняет его в Wallet
     agent_did, agent_verkey = await sirius_sdk.DID.create_and_store_my_did()
 ```
+Весь пример [доступен здесь](examples/python/create_private_did/main.py).
 ### Публичный DID
 Публичный DID регистрируется в [публичном реестре](https://www.w3.org/TR/did-spec-registries/). Таким образом, соответствующий
 DIDDoc доступен неограниченному кругу лиц. Размещение DIDDoc в публичном реестре позволяет поддерживать его в актуальном
@@ -70,14 +72,18 @@ DIDDoc доступен неограниченному кругу лиц. Раз
 В рамках экосистемы Indy право на добавление DID в реестр имеют только агенты со специальной 
 [ролью](https://hyperledger-indy.readthedocs.io/projects/node/en/latest/auth_rules.html) - Steward.
 ```python
-async with sirius_sdk.context(**STEWARD):
-    dkms = await sirius_sdk.ledger(network_name)
-    await dkms.write_nym(
+# Работаем от имени Steward-а
+async with sirius_sdk.context(**steward_agent_params):
+    # работаем с реестром под именем default
+    dkms = await sirius_sdk.ledger('default')
+    # записываем DID клинета в реестр
+    ok, resp = await dkms.write_nym(
         submitter_did=steward_did,
         target_did=agent_did,
         ver_key=agent_verkey
     )
 ```
+Весь пример [доступен здесь](examples/python/register_public_did_indy/main.py).
 
 ## SSI кошелек
 Кошелек представляет собой хранилище публичных и приватных ключей, проверяемых учетных данных, DID и других приватных
