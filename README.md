@@ -72,7 +72,7 @@ DIDDoc доступен неограниченному кругу лиц. Раз
 ```python
 async with sirius_sdk.context(**STEWARD):
     dkms = await sirius_sdk.ledger(network_name)
-    dkms = await sirius_sdk.write_nym(
+    await dkms.write_nym(
         submitter_did=steward_did,
         target_did=agent_did,
         ver_key=agent_verkey
@@ -158,6 +158,16 @@ ok, cred_def_ = await dkms.register_cred_def(
                 submitter_did=ISSUER_DID
             )
 ```
+
+# Создание локальной тестовой среды IndiLynx
+Тестовую среду IndiLynx для запуска представленных в настоящей документации примеров и проведения экспериментов легче всего
+развернуть при помощи [специально подготовленного docker-compose](https://github.com/Sirius-social/sirius-sdk-python/tree/master/test_suite).
+В указанной папке достаточно вызвать
+```
+docker-compose up -d
+```
+.
+Будет развернута вся необходимая инфраструктура и созданы 4 независимых SSI агента.
 
 # Установка доверенного соединения между агентами
 IndiLynx SDK позволяет устанавливать защищенное соединение между двумя агентами в соответствии с протоколом 
