@@ -26,31 +26,31 @@ did:sov:BzCbsNYhMrjHiqZDTUASHg
 
 ```json
 {
-  '@context': 'https://w3id.org/did/v1',
-  'id': 'UNeAfCugwSoeukbBLXdPcU',
-  'authentication': [
+  "@context": "https://w3id.org/did/v1",
+  "id": "UNeAfCugwSoeukbBLXdPcU",
+  "authentication": [
     {
-      'publicKey': 'UNeAfCugwSoeukbBLXdPcU#1',
-      'type': 'Ed25519SignatureAuthentication2018'
+      "publicKey": "UNeAfCugwSoeukbBLXdPcU#1",
+      "type": "Ed25519SignatureAuthentication2018"
     }
   ],
-  'publicKey': [
+  "publicKey": [
     {
-      'id': '1',
-      'type': 'Ed25519VerificationKey2018',
-      'controller': 'UNeAfCugwSoeukbBLXdPcU',
-      'publicKeyBase58': 'FvKTRgSYJkmuaPYdFQNBSJ71c1ajKG3BpQ3sopsTsdug'
+      "id": "1",
+      "type": "Ed25519VerificationKey2018",
+      "controller": "UNeAfCugwSoeukbBLXdPcU",
+      "publicKeyBase58": "FvKTRgSYJkmuaPYdFQNBSJ71c1ajKG3BpQ3sopsTsdug"
     }
   ],
-  'service': [
+  "service": [
     {
-      'id': 'did:peer:UNeAfCugwSoeukbBLXdPcU;indy',
-      'type': 'IndyAgent',
-      'priority': 0,
-      'recipientKeys': [
-        'UNeAfCugwSoeukbBLXdPcU#1'
+      "id": "did:peer:UNeAfCugwSoeukbBLXdPcU;indy",
+      "type": "IndyAgent",
+      "priority": 0,
+      "recipientKeys": [
+        "UNeAfCugwSoeukbBLXdPcU#1"
       ],
-      'serviceEndpoint': 'https://demo.socialsirius.com/endpoint/e0f9bbdfcc82468f8c10e8ac33c0d79c'
+      "serviceEndpoint": "https://demo.socialsirius.com/endpoint/e0f9bbdfcc82468f8c10e8ac33c0d79c"
     }
   ]
 }
@@ -61,7 +61,7 @@ did:sov:BzCbsNYhMrjHiqZDTUASHg
 
 Каждый SSI субъект может создавать неограниченное число своих собственных DID.
 
-Более подробное описание технологии DID можно найти в соответствующем стандарте [W3C](https://www.w3.org/TR/did-core/).
+Более подробное описание технологии DID можно найти в соответствующем [стандарте W3C](https://www.w3.org/TR/did-core/).
 ### Приватный  DID
 DIDDoc приватного DID доступен только тому, кому он был отправлен лично владельцем соответствующего DID. Приватные DID 
 нигде не регистрируются. Обычно приватные DID используются для установления доверенных соединений между агентами.
