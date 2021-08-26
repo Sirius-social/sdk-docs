@@ -40,3 +40,9 @@ async def get_agent_params(agent_name: str):
             their_verkey=p2p['agent']['verkey']
         )
     }
+
+
+class Logger:
+
+    async def __call__(self, *args, **kwargs):
+        print(dict(**kwargs))

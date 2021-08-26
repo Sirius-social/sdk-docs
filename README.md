@@ -1,4 +1,18 @@
+# Создание локальной тестовой среды IndiLynx
+Тестовую среду IndiLynx для запуска представленных в настоящей документации примеров и проведения экспериментов легче всего
+развернуть при помощи [специально подготовленного docker-compose](https://github.com/Sirius-social/sirius-sdk-python/tree/master/test_suite).
+В указанной папке достаточно вызвать
+```
+docker-compose up -d
+```
+Будет развернута вся необходимая инфраструктура и созданы 4 независимых SSI агента.
+
 # Основные определения
+В данном разделе раскрываются основные концепции технологии Self Sovereign Identity (SSI) и демонстрируется их практическое
+использование в IndiLynx SDK.
+
+Более полное описание технологии SSI можно найти в книге [Self-Sovereign Identity](https://www.manning.com/books/self-sovereign-identity).
+
 ## DID
 В основе технологии SSI лежит понятие децентрализованного идентификатора ([DID](https://www.w3.org/TR/did-core/)).
 Например, DID сети [Sovrin](https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html) выглядит
@@ -47,8 +61,7 @@ did:sov:BzCbsNYhMrjHiqZDTUASHg
 
 Каждый SSI субъект может создавать неограниченное число своих собственных DID.
 
-Более подробное описание технологии DID можно найти в книге [Self-Sovereign Identity](https://www.manning.com/books/self-sovereign-identity)
-или соответствующем стандарте [W3C](https://www.w3.org/TR/did-core/).
+Более подробное описание технологии DID можно найти в соответствующем стандарте [W3C](https://www.w3.org/TR/did-core/).
 ### Приватный  DID
 DIDDoc приватного DID доступен только тому, кому он был отправлен лично владельцем соответствующего DID. Приватные DID 
 нигде не регистрируются. Обычно приватные DID используются для установления доверенных соединений между агентами.
@@ -127,6 +140,18 @@ async with sirius_sdk.context(**AGENT):
 Подходит для случая, когда SSI субъектом является физическое лицо. В этом случае SSI кошелек хранится исключительно на 
 устройстве пользователя. Таким образом, отпадает необходимость в доверенном облачном хранилище.
 
+### Endpoint
+Агент имеет один или несколько интернет адресов, по которым с ним можно осуществлять взаимодействие. Это может быть
+HTTP(S)-адрес, WebSocket-адрес, Firebase ID. Получить список адресов агента можно получить следующим образом
+```python
+async with sirius_sdk.context(**agent_params):
+    # получаем список адресов агента
+    endpoints = await sirius_sdk.endpoints()
+    for e in endpoints:
+        print('address: {}; routing_keys: {}'.format(e.address, e.routing_keys))
+```
+Весь пример [доступен здесь](examples/python/endpoints/main.py).
+
 ### Медиатор
 Мобильный агент по разным причинам не может быть доступен 24/7 и у него скорее всего нет постоянного URL адреса. 
 Таким образом, требуется некоторое промежуточное звено, которое бы предоставляло мобильному агенту постоянный URL адрес
@@ -176,16 +201,9 @@ ok, cred_def = await dkms.register_cred_def(
 ```
 Весь пример [доступен здесь](examples/python/create_schema/main.py).
 
-# Создание локальной тестовой среды IndiLynx
-Тестовую среду IndiLynx для запуска представленных в настоящей документации примеров и проведения экспериментов легче всего
-развернуть при помощи [специально подготовленного docker-compose](https://github.com/Sirius-social/sirius-sdk-python/tree/master/test_suite).
-В указанной папке достаточно вызвать
-```
-docker-compose up -d
-```
-Будет развернута вся необходимая инфраструктура и созданы 4 независимых SSI агента.
+#Функциональные возможности IndiLynx SDK
 
-# Установка доверенного соединения между агентами
+## Установка доверенного соединения между агентами
 IndiLynx SDK позволяет устанавливать защищенное соединение между двумя агентами в соответствии с протоколом 
 [0160-connection-protocol](https://github.com/hyperledger/aries-rfcs/tree/main/features/0160-connection-protocol).
 
@@ -199,24 +217,31 @@ IndiLynx SDK инкапсулирует всю внутреннюю логику
 
 Inviter создает приглашение на установку соединения:
 ```python
-# Работаем от лица агента Inviter-а
-async with sirius_sdk.context(**INVITER):
-    connection_key = await sirius_sdk.Crypto.create_key() # уникальный ключ соединения
+# Работаем от имени агента Inviter
+async with sirius_sdk.context(**inviter_agent_params):
+    connection_key = await sirius_sdk.Crypto.create_key()  # уникальный ключ соединения
+    inviter_endpoint = [e for e in await sirius_sdk.endpoints() if e.routing_keys == []][0]
     invitation = Invitation(
         label='Inviter',
-        endpoint=inviter_endpoint.address(), # URL адрес Inviter
+        endpoint=inviter_endpoint.address,  # URL адрес Inviter
         recipient_keys=[connection_key]
     )
 ```
 Invitee получает от Invter-а приглашение по независимому каналу связи (например через qr-код):
 ```python
-# Работаем от лица агента Invitee
-async with sirius_sdk.context(**INVITEE):
+# Работаем от имени Invitee
+async with sirius_sdk.context(**invitee_agent_params):
     # Создадим новый приватный DID для соединения с Inviter-ом
     my_did, my_verkey = await sirius_sdk.DID.create_and_store_my_did()
     me = sirius_sdk.Pairwise.Me(did=my_did, verkey=my_verkey)
     # Создадим экземпляр автомата для установки соединения на стороне Invitee
-    invitee_machine = sirius_sdk.aries_rfc.Invitee(me, invitee_endpoint)
+    invitee_machine = Invitee(
+        me=me,
+        my_endpoint=[e for e in await sirius_sdk.endpoints() if e.routing_keys == []][0],
+        logger=Logger()
+    )
+
+    # Запускаем процесс установки соединения
     ok, pairwise = await invitee_machine.create_connection(
         invitation=invitation,
         my_label='Invitee'
@@ -225,14 +250,21 @@ async with sirius_sdk.context(**INVITEE):
 
 Установка соединения на стороне Inviter-а:
 ```python
-# Работаем от лица агента Inviter-а
-async with sirius_sdk.context(**INVITER):
+# Работаем от имени Inviter
+async with sirius_sdk.context(**inviter_agent_params):
     # Создадим новый приватный DID для соединений в рамках ранее созданного invitation
     my_did, my_verkey = await sirius_sdk.DID.create_and_store_my_did()
     me = sirius_sdk.Pairwise.Me(did=my_did, verkey=my_verkey)
-    # Создадим экземпляр автомата для установки соединения на стотоне Inviter-а
-    inviter_machine = Inviter(me, connection_key, inviter_endpoint)
+    inviter_endpoint = [e for e in await sirius_sdk.endpoints() if e.routing_keys == []][0]
+    # Создадим экземпляр автомата для установки соединения на стороне Inviter-а
+    inviter_machine = Inviter(
+        me=me,
+        connection_key=connection_key,
+        my_endpoint=inviter_endpoint,
+        logger=Logger()
+    )
     listener = await sirius_sdk.subscribe()
+    # Ждем сообщение от Invitee
     async for event in listener:
         request = event['message']
         # Inviter получает ConnRequest от Invitee и проверяет, что он относится к ранее созданному приглашению
@@ -240,14 +272,15 @@ async with sirius_sdk.context(**INVITER):
             # запускаем процесс установки соединения
             ok, pairwise = await inviter_machine.create_connection(request)
 ```
+Весь пример [доступен здесь](examples/python/establish_connection/main.py).
 
-Результатом установки соединения у обеих сторон является объект Pairwise, который хранится в Wallet обоих сторон. 
+Результатом установки соединения у обеих сторон является объект Pairwise, который хранится в Wallet обеих сторон. 
 Следует отметить, что установка соединения
 в общем случае производится один раз и не зависит жизненного цикла агентов или внутренних сетевых соединений. Аналогом установки
 соединения между агентами является обмен визитками или номерами телефонов, с той лишь разницей, что в рассматриваемом
 случае уставленное соединение защищено современной криптографией и основано на технологии [DID](https://www.w3.org/TR/did-core/).
 
-# Выдача и получение проверяемых учетных данных
+## Выдача и получение проверяемых учетных данных
 IndiLynx SDK позволяет выдавать и получать проверяемые учетные данные в соответствии с протоколом
 [0036-issue-credential](https://github.com/hyperledger/aries-rfcs/tree/main/features/0036-issue-credential).
 
@@ -301,7 +334,7 @@ async with sirius_sdk.context(**HOLDER):
             )
 ```
 
-# Запрос и предоставление проверяемых учетных данных
+## Запрос и предоставление проверяемых учетных данных
 IndiLynx SDK позволяет запрашивать сведения и формировать криптографические доказательства о проверяемых учетных данных
 владельца в соответствии с протоколом
 [0037-present-proof](https://github.com/hyperledger/aries-rfcs/tree/main/features/0037-present-proof).
@@ -375,7 +408,7 @@ async for event in listener:
 ```
 
 
-# Установка доверенной среды между агентами
+## Установка доверенной среды между агентами
 Платформа IndiLynx-SDK позволяет устанавливать доверенную среду между множеством участников для исполнения смарт-контрактов.
 Логика смарт-контрактов исполняется непосредственно на агентах участников, таким образом отсутствует необходимость в использовании
 дорогостоящих публичных децентрализованных виртуальных машин, таких как [Ethereum](https://ethereum.org/).
