@@ -18,23 +18,23 @@ docker-compose up -d
 Например, DID сети [Sovrin](https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html) выглядит
 следующим образом
 ```
-did:sov:BzCbsNYhMrjHiqZDTUASHg
+did:sov:UNeAfCugwSoeukbBLXdPcU
 ```
 
-С каждым DID связан т.н. DID Document, который хранит криптографическую информацию, способную идентифицировать его владельца,
+С каждым DID связан т.н. DID Document (DIDDoc), который хранит криптографическую информацию, способную идентифицировать его владельца,
 и способы взаимодействия с владельцем DID (например URL-адреса его SSI агентов):
 
-```json
+```python
 {
-  "@context": "https://w3id.org/did/v1",
+  "@context": "https://w3id.org/did/v1", # указывает на принадлежность стандарту https://www.w3.org/TR/did-core/
   "id": "UNeAfCugwSoeukbBLXdPcU",
-  "authentication": [
+  "authentication": [ # служебная информация, необходимая субъекту для доказательства владения данным DID
     {
       "publicKey": "UNeAfCugwSoeukbBLXdPcU#1",
       "type": "Ed25519SignatureAuthentication2018"
     }
   ],
-  "publicKey": [
+  "publicKey": [ # ассоциированный с данным DID публичный ключ
     {
       "id": "1",
       "type": "Ed25519VerificationKey2018",
@@ -42,7 +42,7 @@ did:sov:BzCbsNYhMrjHiqZDTUASHg
       "publicKeyBase58": "FvKTRgSYJkmuaPYdFQNBSJ71c1ajKG3BpQ3sopsTsdug"
     }
   ],
-  "service": [
+  "service": [ # Способы взаимодействия с субъектом (адреса агентов)
     {
       "id": "did:peer:UNeAfCugwSoeukbBLXdPcU;indy",
       "type": "IndyAgent",
