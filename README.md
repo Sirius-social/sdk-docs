@@ -108,6 +108,10 @@ async with sirius_sdk.context(**steward_agent_params):
 
 Концепция SSI агентов описана в [Aries RFC 0004](https://github.com/hyperledger/aries-rfcs/tree/main/concepts/0004-agents).
 
+Общая схема взаимодействия субъектов и их агентов показана на рисунке ниже
+
+![SSI Schema](ssi_schema.png)
+
 ### Облачный агент
 Подходит для случая, когда SSI субъектом является юридическое лицо. Облачный агент управляется из корпоративного
 приложения при помощи IndiLynx-SDK.
